@@ -87,8 +87,8 @@
 
 <script>
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-let deleted = parseInt(localStorage.getItem("deleted")) || 0;
-let edited = parseInt(localStorage.getItem("edited")) || 0;
+let deleted = localStorage.getItem("deleted") !== null ? Number(localStorage.getItem("deleted")) : 0;
+let edited  = localStorage.getItem("edited")  !== null ? Number(localStorage.getItem("edited"))  : 0;
 
 const taskInput=document.getElementById("taskInput"),
  addBtn=document.getElementById("addBtn"),
@@ -108,8 +108,8 @@ function updateStats(){
 }
 function saveTasks(){
  localStorage.setItem("tasks",JSON.stringify(tasks));
- localStorage.setItem("deleted",deleted);
- localStorage.setItem("edited",edited);
+ localStorage.setItem("deleted",deleted.toString());
+ localStorage.setItem("edited",edited.toString());
 }
 function renderTasks(){
  taskList.innerHTML="";
@@ -166,7 +166,7 @@ deleteSelected.addEventListener("click",()=>{
 });
 document.getElementById("sortAsc").addEventListener("click",()=>{tasks.sort((a,b)=>a.name.localeCompare(b.name));renderTasks();});
 document.getElementById("sortDesc").addEventListener("click",()=>{tasks.sort((a,b)=>b.name.localeCompare(a.name));renderTasks();});
-document.getElementById("resetSort").addEventListener("click",()=>{tasks=JSON.parse(localStorage.getItem("tasks"))||tasks;renderTasks();});
+document.getElementById("resetSort").addEventListener("click",()=>{tasks=JSON.parse(localStorage.getItem("tasks"))||[];renderTasks();});
 renderTasks();
 </script>
 </body>
