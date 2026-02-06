@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Taskify - A Simple Task Manager</title>
+  <style>
+    :root {
+      --primary:#4a90e2;--danger:#e74c3c;--success:#2ecc71;
+      --bg-light:#f0f2f5;--bg-dark:#1e1e1e;
+      --text-dark:#333;--text-light:#eee;
+    }
+    body {
+      font-family:"Segoe UI",Arial,sans-serif;
+      background:var(--bg-light);
+      color:var(--text-dark);
+      margin:0;display:flex;
+    }
+    header {
+      background:var(--primary);color:#fff;
+      padding:20px;text-align:center;
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+    }
+    .sidebar {
+      width:250px;background:#fff;padding:20px;
+      box-shadow:2px 0 6px rgba(0,0,0,0.1);
+      display:flex;flex-direction:column;align-items:stretch;
+    }
+    .sidebar h2 {margin-top:0;text-align:center;color:var(--primary);}
+    .sidebar input {
+      padding:8px;border:2px solid #ddd;border-radius:6px;margin-bottom:10px;
+    }
+    .sidebar input:focus {border-color:var(--primary);outline:none;}
+    .sidebar button {
+      margin:5px 0;padding:10px;border:none;border-radius:6px;
+      cursor:pointer;background:var(--primary);color:#fff;font-weight:bold;
+      transition:background 0.3s;
+    }
+    .sidebar button:hover {background:#357ab8;}
+    .info-box {
+      margin-top:20px;padding:15px;border-radius:8px;
+      background:#f9f9f9;box-shadow:0 2px 4px rgba(0,0,0,0.05);
+      font-size:14px;color:#444;
+    }
+    .info-box p {margin:6px 0;}
+    main {flex:1;padding:20px;}
+    ul {list-style:none;padding:0;max-width:600px;margin:auto;}
+    li {
+      background:#fff;margin:10px 0;padding:12px;border-radius:10px;
+      display:flex;justify-content:space-between;align-items:center;
+      box-shadow:0 2px 6px rgba(0,0,0,0.08);
+      transition:background 0.3s;
+    }
+    li:hover {background:#f0f8ff;}
+    .completed {text-decoration:line-through;color:var(--success);}
+    span:hover {background:yellow;border-radius:4px;}
+    .dark-mode {background:var(--bg-dark);color:var(--text-light);}
+    .dark-mode .sidebar {background:#2c2c2c;color:var(--text-light);}
+    .dark-mode li {background:#333;color:var(--text-light);}
+    .selected {background:#ffeaa7!important;}
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Controls</h2>
+    <input type="text" id="taskInput" placeholder="Add new task here..">
+    <button id="addBtn">Add Task</button>
+    <button id="sortAsc">Sort (A-Z)</button>
+    <button id="sortDesc">Sort (Z-A)</button>
+    <button id="resetSort">Reset Sort</button>
+    <button id="deleteSelected">Delete Selected</button>
+    <button id="themeToggle">🌙/☀️ Theme</button>
+
+    <div class="info-box">
+      <p><strong>Total Tasks:</strong> <span id="totalCount">0</span></p>
+      <p><strong>Completed Tasks:</strong> <span id="completedCount">0</span></p>
+      <p><strong>Deleted Tasks:</strong> <span id="deletedCount">0</span></p>
+      <p><strong>Edited Tasks:</strong> <span id="editedCount">0</span></p>
+      <hr>
+      <p style="text-align:center;font-weight:bold;">Created by Marvin M. Partos</p>
+    </div>
+  </div>
+
+  <main>
+    <header><h1>Taskify</h1><p>A Simple Task Manager</p></header>
+    <ul id="taskList"></ul>
+  </main>
+
+<script>
+let tasks=JSON.parse(localStorage.getItem("tasks"))||[];
+let deleted=0,edited=0;
+const taskInput=document.getElementById("taskInput"),
+ addBtn=document.getElementById("addBtn"),
+ taskList=document.getElementById("taskList"),
+ totalCount=document.getElementById("totalCount"),
+ completedCount=document.getElementById("completedCount"),
+ deletedCount=document.getElementById("deletedCount"),
+ editedCount=document.getElementById("editedCount"),
+ themeToggle=document.getElementById("themeToggle"),
+ deleteSelected=document.getElementById("deleteSelected");
+
+function updateStats(){
+ totalCount.textContent=tasks.length;
+ completedCount.textContent=tasks.filter(t=>t.completed).length;
+ deletedCount.textContent=deleted;
+ editedCount.textContent=edited;
+}
+function saveTasks(){localStorage.setItem("tasks",JSON.stringify(tasks));}
+function renderTasks(){
+ taskList.innerHTML="";
+ tasks.forEach((task,i)=>{
+  const li=document.createElement("li");
+  li.setAttribute("draggable",true);
+  li.ondragstart=e=>e.dataTransfer.setData("index",i);
+  li.ondragover=e=>e.preventDefault();
+  li.ondrop=e=>{
+   const from=e.dataTransfer.getData("index"),to=i;
+   const moved=tasks.splice(from,1)[0];
+   tasks.splice(to,0,moved);saveTasks();renderTasks();
+  };
+  li.innerHTML=`
+   <input type="checkbox" ${task.selected?"checked":""} onclick="toggleSelect(${i})">
+   <span class="${task.completed?"completed":""}" ondblclick="editTask(${i})">${task.name}</span>
+   <div>
+    <button onclick="toggleComplete(${i})" style="color:var(--success)">✔️</button>
+    <button onclick="deleteTask(${i})" style="color:var(--danger)">❌</button>
+   </div>`;
+  if(task.selected)li.classList.add("selected");
+  taskList.appendChild(li);
+ });
+ updateStats();
+}
+function addTask(){
+ const name=taskInput.value.trim();
+ if(!name)return alert("Empty task not allowed!");
+ if(tasks.some(t=>t.name.toLowerCase()===name.toLowerCase()))return alert("Duplicate task!");
+ tasks.push({name,completed:false,selected:false});
+ taskInput.value="";saveTasks();renderTasks();
+}
+function deleteTask(i){
+ if(confirm(`Delete task: ${tasks[i].name}?`)){
+  tasks.splice(i,1);deleted++;saveTasks();renderTasks();
+ }
+}
+function toggleComplete(i){tasks[i].completed=!tasks[i].completed;saveTasks();renderTasks();}
+function editTask(i){
+ const newName=prompt("Edit task:",tasks[i].name);
+ if(newName && !tasks.some(t=>t.name.toLowerCase()===newName.toLowerCase())){
+  tasks[i].name=newName;edited++;saveTasks();renderTasks();
+ }
+}
+function toggleSelect(i){tasks[i].selected=!tasks[i].selected;renderTasks();}
+addBtn.addEventListener("click",addTask);
+taskInput.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addTask();}});
+themeToggle.addEventListener("click",()=>document.body.classList.toggle("dark-mode"));
+deleteSelected.addEventListener("click",()=>{
+ const count=tasks.filter(t=>t.selected).length;
+ if(count>0 && confirm(`Delete ${count} selected tasks?`)){
+  tasks=tasks.filter(t=>!t.selected);deleted+=count;saveTasks();renderTasks();
+ }
+});
+document.getElementById("sortAsc").addEventListener("click",()=>{tasks.sort((a,b)=>a.name.localeCompare(b.name));renderTasks();});
+document.getElementById("sortDesc").addEventListener("click",()=>{tasks.sort((a,b)=>b.name.localeCompare(a.name));renderTasks();});
+document.getElementById("resetSort").addEventListener("click",()=>{tasks=JSON.parse(localStorage.getItem("tasks"))||tasks;renderTasks();});
+renderTasks();
+</script>
+</body>
+</html>
